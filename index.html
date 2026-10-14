@@ -65,6 +65,16 @@ main{position:relative;z-index:3;height:100%;display:flex;overflow-x:hidden;over
 @keyframes pulse{50%{box-shadow:0 0 20px rgba(127,220,255,.45)}}
 #rwgif{height:150px;max-width:100%;object-fit:contain}
 
+/* Thanh chỉnh âm lượng */
+#vol{position:fixed;left:16px;bottom:16px;z-index:6;display:flex;align-items:center;gap:10px}
+#volbtn{background:none;border:0;cursor:pointer;width:34px;height:34px;display:grid;place-items:center;filter:drop-shadow(0 1px 4px rgba(0,0,0,.7))}
+#volbtn svg{width:26px;height:26px;fill:none;stroke:#fff;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+#volrange{--p:100%;-webkit-appearance:none;appearance:none;width:120px;height:4px;border-radius:2px;outline:none;cursor:pointer;
+ background:linear-gradient(to right,#fff var(--p),rgba(255,255,255,.35) var(--p));filter:drop-shadow(0 1px 4px rgba(0,0,0,.7))}
+#volrange::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;border-radius:50%;background:#fff;border:0}
+#volrange::-moz-range-thumb{width:14px;height:14px;border-radius:50%;background:#fff;border:0}
+#volrange::-moz-range-track{background:transparent}
+
 /* ===== Responsive ===== */
 @media (max-width:600px){
  :root{--c:72px;--gap:18px;--fs:21px;--hs:1.2}
@@ -74,6 +84,8 @@ main{position:relative;z-index:3;height:100%;display:flex;overflow-x:hidden;over
  .row{gap:12px}
  #text{font-size:clamp(20px,6vw,26px);max-width:210px}
  #vase{height:clamp(80px,14vh,115px)}
+ #vol{left:10px;bottom:10px}
+ #volrange{width:90px}
  .rewind{width:76px;height:76px}
  .rewind svg{width:50px;height:50px}
  #rwgif{height:115px}
@@ -92,6 +104,10 @@ main{position:relative;z-index:3;height:100%;display:flex;overflow-x:hidden;over
 <video id="bg" src="background.mp4" autoplay muted loop playsinline></video>
 <audio id="song" src="song.mp3" loop preload="auto"></audio>
 <audio id="rwsound" src="rewind.mp3" preload="auto"></audio>
+<div id="vol">
+  <button id="volbtn" aria-label="Tắt/bật tiếng"><svg viewBox="0 0 24 24"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><g id="volwaves"></g></svg></button>
+  <input id="volrange" type="range" min="0" max="1" step="0.01" value="1" aria-label="Âm lượng">
+</div>
 
 <main>
   <div class="wrap">
@@ -206,13 +222,34 @@ function startReverse(){
 }
 function stopReverse(){ reversing = false; bg.play().catch(()=>{}); }
 
+/* Thanh âm lượng (áp dụng cho song.mp3 và rewind.mp3) */
+let userMuted = false;
+const volRange = document.getElementById('volrange');
+const volWaves = document.getElementById('volwaves');
+function applyVolume(){
+  const v = parseFloat(volRange.value);
+  const rwS = document.getElementById('rwsound');
+  song.volume = v; rwS.volume = v;
+  song.muted = userMuted; rwS.muted = userMuted;
+  volRange.style.setProperty('--p', (userMuted ? 0 : v * 100) + '%');
+  const lvl = (userMuted || v === 0) ? 0 : v < .5 ? 1 : 2;
+  volWaves.innerHTML = lvl === 0 ? '<path d="M16 9l6 6M22 9l-6 6"/>'
+    : lvl === 1 ? '<path d="M15.5 8.5a5 5 0 0 1 0 7"/>'
+    : '<path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M18.5 5.5a9 9 0 0 1 0 13"/>';
+}
+volRange.addEventListener('input', () => { userMuted = false; applyVolume(); });
+document.getElementById('volbtn').addEventListener('click', () => {
+  if(parseFloat(volRange.value) === 0){ volRange.value = 1; userMuted = false; } else userMuted = !userMuted;
+  applyVolume();
+});
+
 /* Video luôn tắt tiếng; sau rewind đổi sang rewinded.mp4 và phát song.mp3 */
 bg.muted = true; bg.defaultMuted = true;
 const song = document.getElementById('song');
 function unlockSong(){            // gọi ngay trong lúc click để trình duyệt cho phép phát nhạc sau đó
   song.muted = true;
-  song.play().then(() => { song.pause(); song.currentTime = 0; song.muted = false; })
-             .catch(() => { song.muted = false; });
+  song.play().then(() => { song.pause(); song.currentTime = 0; song.muted = userMuted; })
+             .catch(() => { song.muted = userMuted; });
 }
 function switchVideo(){
   reversing = false;
@@ -220,9 +257,11 @@ function switchVideo(){
   bg.muted = true; bg.loop = true;
   bg.load();
   bg.play().catch(()=>{});
-  song.muted = false;
+  song.muted = userMuted;
   song.play().catch(()=>{});
 }
+
+applyVolume();
 
 /* ====== FLOW ====== */
 async function breakVase(){
