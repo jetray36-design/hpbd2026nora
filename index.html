@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Touch the vase</title>
+<link href="https://fonts.googleapis.com/css2?family=Patrick+Hand&family=Mali:wght@500;600&family=Nunito:wght@600;700&display=swap" rel="stylesheet">
+<style>
+
+:root{--c:96px;--gap:32px;--fs:26px;--hs:1.35;--lblw:calc(50vw - var(--c)/2 - var(--gap) - 14px)}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;height:100dvh;overflow:hidden;background:#0b0d10;font-family:'Nunito',system-ui,sans-serif;-webkit-tap-highlight-color:transparent}
+#bg{position:fixed;inset:0;width:100%;height:100%;object-fit:cover;z-index:0;transition:filter .5s}
+body.rewinding #bg{filter:sepia(1) hue-rotate(160deg) saturate(2) contrast(1.1)}
+
+/* main cuộn được nếu màn hình quá thấp, .wrap tự căn giữa */
+main{position:relative;z-index:3;height:100%;display:flex;overflow-x:hidden;overflow-y:auto;padding:16px}
+.wrap{display:flex;flex-direction:column;align-items:center;gap:26px;width:100%;margin:auto}
+
+/* Paper card */
+.card{width:min(440px,100%);min-height:250px;padding:26px 24px 24px;
+ display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;
+ background:#e9dfc4 url('paper.png') center/cover no-repeat;
+ border-radius:4px;color:#2b2118;
+ box-shadow:0 2px 4px rgba(0,0,0,.35),0 18px 50px rgba(0,0,0,.65),inset 0 0 60px rgba(90,60,20,.25);
+ transform:rotate(-.6deg)}
+.row{display:flex;align-items:center;justify-content:center;gap:18px;flex-wrap:wrap}
+#text{font-family:'Patrick Hand','Mali',cursive;font-weight:400;font-size:clamp(22px,3.6vw,32px);line-height:1.15;text-align:center;
+ max-width:250px;transition:opacity .5s,transform .5s}
+#text{white-space:pre-line}
+#text.out{opacity:0;transform:translateY(6px)}
+#text.md{font-size:clamp(18px,5vw,24px);max-width:270px}
+#text.lg{font-size:clamp(16px,4.4vw,21px);max-width:290px}
+#vase{height:clamp(90px,17vh,140px);max-width:100%;object-fit:contain;cursor:pointer;filter:drop-shadow(0 8px 10px rgba(0,0,0,.45));
+ transition:transform .3s,opacity .4s;animation:float 4s ease-in-out infinite}
+#vase:hover{transform:scale(1.06) rotate(-2deg)}
+#vase.out{opacity:0}
+@keyframes float{50%{transform:translateY(-5px)}}
+
+/* Lựa chọn hội thoại */
+#choices{min-height:calc(var(--c) + 24px);width:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px}
+.choice,.multi{position:relative;width:var(--c);height:var(--c);animation:pop .5s both}
+.choice{background:none;border:0;cursor:pointer;color:#fff}
+.choice svg,.multi svg{width:var(--c);height:var(--c);overflow:visible}
+.choice path,.multi path{fill:none;stroke:#fff;filter:drop-shadow(0 1px 4px rgba(0,0,0,.7));stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;
+ stroke-dasharray:220;stroke-dashoffset:220;animation:draw .7s .1s ease-out forwards}
+@keyframes draw{to{stroke-dashoffset:0}}
+.lbl,.opt,.opt-r{color:#fff;text-shadow:0 2px 8px rgba(0,0,0,.85);font:400 var(--fs)/1.1 'Patrick Hand','Mali',cursive;letter-spacing:.3px;
+ opacity:.85;max-width:var(--lblw);white-space:normal;background:none;border:0;cursor:pointer;
+ transition:opacity .2s,transform .25s cubic-bezier(.3,1.6,.5,1)}
+.lbl,.opt-r{position:absolute;left:calc(var(--c) + var(--gap));top:50%;transform:translateY(-50%);transform-origin:left center;text-align:left;width:max-content}
+.choice:hover .lbl,.opt-r:hover{opacity:1;transform:translateY(-50%) scale(var(--hs))}
+.opts{position:absolute;right:calc(var(--c) + var(--gap));width:max-content;max-width:var(--lblw);top:50%;transform:translateY(-50%);display:flex;flex-direction:column;align-items:flex-end;gap:12px}
+.opt{transform-origin:right center;text-align:right;max-width:100%}
+.opt:hover{opacity:1;transform:scale(var(--hs))}
+@keyframes pop{from{opacity:0;transform:translateY(12px)}}
+
+.rewind{width:92px;height:92px;border-radius:50%;border:2px solid rgba(255,255,255,.7);background:rgba(18,22,28,.82);
+ cursor:pointer;display:grid;place-items:center;transition:all .25s;animation:pop .5s both,pulse 2.2s ease-in-out infinite}
+.rewind:hover{border-color:#7fdcff;box-shadow:0 0 28px rgba(127,220,255,.7)}
+.rewind svg{width:60px;height:60px;overflow:visible}
+.rewind path{fill:none;stroke:#fff;stroke-width:4;stroke-linecap:round}
+.rewind.pic{padding:0;overflow:hidden;border-width:2px}
+.rewind canvas{width:100%;height:100%;border-radius:50%;object-fit:cover;display:block}
+@keyframes pulse{50%{box-shadow:0 0 20px rgba(127,220,255,.45)}}
+#rwgif{height:150px;max-width:100%;object-fit:contain}
+
+/* ===== Responsive ===== */
+@media (max-width:600px){
+ :root{--c:72px;--gap:18px;--fs:21px;--hs:1.2}
+ main{padding:12px}
+ .wrap{gap:18px}
+ .card{min-height:210px;padding:20px 16px 18px;gap:12px}
+ .row{gap:12px}
+ #text{font-size:clamp(20px,6vw,26px);max-width:210px}
+ #vase{height:clamp(80px,14vh,115px)}
+ .rewind{width:76px;height:76px}
+ .rewind svg{width:50px;height:50px}
+ #rwgif{height:115px}
+}
+@media (max-height:560px){
+ .card{min-height:0;padding:14px 18px}
+ #vase{height:clamp(60px,22vh,90px)}
+ .wrap{gap:10px}
+ :root{--c:60px;--fs:20px}
+ #choices{min-height:calc(var(--c) + 8px)}
+ #rwgif{height:90px}
+}
+</style>
+</head>
+<body>
+<video id="bg" src="background.mp4" autoplay muted loop playsinline></video>
+<audio id="song" src="song.mp3" loop preload="auto"></audio>
+<audio id="rwsound" src="rewind.mp3" preload="auto"></audio>
+
+<main>
+  <div class="wrap">
+    <div class="card">
+      <div class="row">
+        <div id="text">Touch the vase</div>
+        <img id="vase" src="vase.png" alt="vase">
+      </div>
+    </div>
+    <div id="choices"></div>
+  </div>
+</main>
+
+<script>
+/* ====== CẤU HÌNH ====== */
+const REWIND_MS = 5000;        // thời gian tua ngược (ms)
+// Khi mở trực tiếp bằng file:// trình duyệt chặn đọc text1.txt / text2.txt,
+// nên nội dung được ghi sẵn ở đây. (Nếu chạy qua server, trang sẽ ưu tiên đọc từ file .txt)
+const TEXT1 = "Hello Max Caulfield wannabe, đừng vội mở hộp quà mà hãy đọc những dòng này trước nha. Năm ngoái anh đã miss quà sinh nhật của em vì anh không tự tin vào khả năng may vá của mình.";
+const TEXT2 = "Vì vậy năm nay anh đã chơi lớn, anh dồn món quà của năm ngoái và năm nay thành 1 cái nên đừng hỏi vì sao effort lại cao như vậy (có bao giờ effort thấp).";
+const REVERSE_SPEED   = 2;      // tốc độ tua ngược video (1 = bình thường)
+
+const bg = document.getElementById('bg');
+const text = document.getElementById('text');
+const vase = document.getElementById('vase');
+const choices = document.getElementById('choices');
+const wait = ms => new Promise(r => setTimeout(r, ms));
+let busy = false;
+
+async function setText(t){
+  text.classList.add('out'); await wait(450);
+  text.textContent = t;
+  text.classList.toggle('md', t.length > 90 && t.length <= 170);
+  text.classList.toggle('lg', t.length > 170);
+  text.classList.remove('out');
+}
+async function swapVase(src){
+  vase.classList.add('out'); await wait(300);
+  vase.src = src; vase.classList.remove('out');
+}
+const DOODLE = '<svg viewBox="0 0 60 60"><path d="M31 5 C45 3 58 15 55 31 C53 46 41 57 27 55 C13 54 3 42 5 28 C7 15 18 6 31 5 Z"/></svg>';
+function showChoices(items){
+  choices.innerHTML = '';
+  const pick = fn => { if(busy) return; busy = true; choices.innerHTML=''; fn(); };
+  if(items.length === 1){
+    const [label, fn] = items[0];
+    const b = document.createElement('button');
+    b.className = 'choice';
+    b.innerHTML = DOODLE + '<span class="lbl"></span>';
+    b.querySelector('.lbl').textContent = label;
+    b.onclick = () => pick(fn);
+    choices.appendChild(b);
+    return;
+  }
+  // 2 lựa chọn: 1 vòng tròn ở giữa; lựa chọn đầu (Okay) bên phải, lựa chọn còn lại bên trái
+  const wrap = document.createElement('div');
+  wrap.className = 'multi';
+  wrap.innerHTML = DOODLE + '<div class="opts"></div>';
+  const right = document.createElement('button');
+  right.className = 'opt-r'; right.textContent = items[0][0];
+  right.onclick = () => pick(items[0][1]);
+  wrap.appendChild(right);
+  const opts = wrap.querySelector('.opts');
+  items.slice(1).forEach(([label, fn]) => {
+    const o = document.createElement('button');
+    o.className = 'opt'; o.textContent = label;
+    o.onclick = () => pick(fn);
+    opts.appendChild(o);
+  });
+  choices.appendChild(wrap);
+}
+const showChoice = (label, fn) => showChoices([[label, fn]]);
+function spiralPath(){
+  let d = '';
+  for(let a = 0; a <= 6.2*Math.PI; a += .2){
+    const r = 3 + a*2.3;
+    d += (a ? 'L' : 'M') + (50 + r*Math.cos(a)).toFixed(1) + ' ' + (50 + r*Math.sin(a)).toFixed(1);
+  }
+  return d;
+}
+function showRewind(){
+  choices.innerHTML = '';
+  const b = document.createElement('button');
+  b.className = 'rewind'; b.setAttribute('aria-label','Rewind');
+  b.innerHTML = '<svg viewBox="0 0 100 100"><path d="'+spiralPath()+'"/></svg>';
+  b.onclick = () => { if(busy) return; busy = true; rewind(); };
+  choices.appendChild(b);
+  // Dùng frame đầu của rewind.gif làm hình nút (nếu không tải được thì giữ xoắn ốc)
+  const im = new Image();
+  im.onload = () => {
+    const cv = document.createElement('canvas');
+    cv.width = im.naturalWidth; cv.height = im.naturalHeight;
+    cv.getContext('2d').drawImage(im, 0, 0);
+    b.innerHTML = ''; b.classList.add('pic'); b.appendChild(cv);
+  };
+  im.src = 'rewind.gif';
+}
+
+/* Tua ngược video nền bằng cách lùi currentTime */
+let reversing = false;
+function startReverse(){
+  reversing = true; bg.pause();
+  let last = performance.now();
+  (function step(now){
+    if(!reversing) return;
+    const dt = (now - last) / 1000; last = now;
+    let t = bg.currentTime - dt * REVERSE_SPEED;
+    if(t <= 0) t = (bg.duration || 1) - 0.05;
+    bg.currentTime = t;
+    requestAnimationFrame(step);
+  })(last);
+}
+function stopReverse(){ reversing = false; bg.play().catch(()=>{}); }
+
+/* Video luôn tắt tiếng; sau rewind đổi sang rewinded.mp4 và phát song.mp3 */
+bg.muted = true; bg.defaultMuted = true;
+const song = document.getElementById('song');
+function unlockSong(){            // gọi ngay trong lúc click để trình duyệt cho phép phát nhạc sau đó
+  song.muted = true;
+  song.play().then(() => { song.pause(); song.currentTime = 0; song.muted = false; })
+             .catch(() => { song.muted = false; });
+}
+function switchVideo(){
+  reversing = false;
+  bg.src = 'rewinded.mp4';
+  bg.muted = true; bg.loop = true;
+  bg.load();
+  bg.play().catch(()=>{});
+  song.muted = false;
+  song.play().catch(()=>{});
+}
+
+/* ====== FLOW ====== */
+async function breakVase(){
+  if(busy) return; busy = true;
+  await swapVase('brokenvase.png');
+  await setText("Oh no, you broke it. Don't worry, we could always turn back time once again.");
+  busy = false; showChoice('Okay', step2);
+}
+async function step2(){
+  await setText('Focus your energy and chant "Remember your old self, show me your form once more"');
+  busy = false; showRewind();
+}
+async function rewind(){
+  unlockSong();
+  const rw = document.getElementById('rwsound');
+  rw.currentTime = 0; rw.play().catch(()=>{});
+  document.body.classList.add('rewinding');
+  startReverse();
+  // phát rewind.gif (thêm tham số để GIF chạy lại từ đầu)
+  const src = 'rewind.gif?t=' + Date.now();
+  choices.innerHTML = '<img id="rwgif" alt="rewind">';
+  document.getElementById('rwgif').src = src;
+  await wait(REWIND_MS);
+  // hết 5s -> tiếp tục flow
+  rw.pause(); rw.currentTime = 0;
+  switchVideo();
+  document.body.classList.remove('rewinding');
+  choices.innerHTML = '';
+  await swapVase('vase2.png');
+  await setText('Wow, thank you for saving the vase');
+  busy = false; showChoice('No problem', step4);
+}
+async function loadTxt(file, fallback){
+  try{
+    const r = await fetch(file + '?t=' + Date.now());
+    if(r.ok) return (await r.text()).trim();
+  }catch(e){}
+  return fallback;
+}
+async function step4(){
+  await setText("Now it's your reward. Tear the QR paper, then open the package.");
+  busy = false; showChoice('I have done it', step5);
+}
+async function step5(){
+  await setText(await loadTxt('text1.txt', TEXT1));
+  busy = false; showChoice('Yes', step6);
+}
+async function step6(){
+  await setText(await loadTxt('text2.txt', TEXT2));
+  busy = false;
+  showChoices([
+    ['Okay', step10],
+    ['Why is the vase still here?', step9A],
+    ['Ghê vậy sao', step10]
+  ]);
+}
+async function step9A(){
+  await setText('Just open the damn package bro');
+  busy = false;
+  showChoices([
+    ['Okay', step10],
+    ["Hey, I don't want it to be here", step9B]
+  ]);
+}
+async function step9B(){
+  await setText('Fack you, this vase is here on my behalf, do you want your birthday present or not?');
+  busy = false;
+  showChoices([['Fine', step10]]);
+}
+const TEXT3 = "Trước tiên thì cảm ơn em thời gian qua đã luôn ở bên anh dù có nắng, mưa, sương mù. Anh tặng món quà này dựa trên rất nhiều lý do, em có đoán được là gì không.";
+const TEXT4 = "Oh well, đây là một trong những thứ em đã muốn từ lâu, nó sẽ giúp em trong những lúc đi chơi cũng như là lúc cosplay";
+const TEXT5 = "Okay bây giờ mở quà đi em.";
+const TEXT6 = "Đây là tin nhắn failsafe tại tui sợ bà bấm lộn trước khi mở quà, mở rồi mới bấm trang tiếp theo nha.";
+const TEXT7 = "Surprise!!! Anh nhớ em luôn bảo mình muốn một cái máy ảnh, em dành thời gian đắn đo suy nghĩ nhiều ấy nên anh đã nghĩ về việc tặng em 1 cái từ lâu rồi.";
+const TEXT8 = "Hồi đầu năm anh đi đám cưới bạn anh và anh thấy nhỏ đó có một cái máy chụp như này trông dễ thương vô cùng luôn nên tui có hỏi mẫu mã và mua 1 cái!";
+const TEXT10 = "Anh hy vọng là em thích món quà này. Cho dù sau này dù chúng ta có hướng đi riêng hoặc chung thì anh vẫn rất là thương em. Chúc em luôn hạnh phúc, khoẻ mạnh và có nhiều thành công trong cuộc sống\n\nAlways love you.";
+const TEXT9 = "Bây giờ em có thể nói mình là Max Caulfield rồi đấy! Hãy chụp mọi khoảnh khắc vui vẻ, hạnh phúc mà em có nha.";
+
+async function scene(t, opts){
+  await setText(t);
+  busy = false;
+  if(opts) showChoices(opts);
+}
+const step10 = () => scene(TEXT3, [['Không nói sao biết hả cha', step11], ['Không biết', step11]]);
+const step11 = () => scene(TEXT4, [['Ok tui vẫn không biết', step12], ['Hình như tui biết là gì rồi', step12]]);
+const step12 = () => scene(TEXT5, [['Tui mở rồi', step13]]);
+const step13 = () => scene(TEXT6, [['Ok bro', step14]]);
+const step14 = () => scene(TEXT7, [['Nói tiếp đi', step15]]);
+const step15 = () => scene(TEXT8, [['Nói tiếp đi', step16]]);
+const step16 = () => scene(TEXT9, [['Okay', step17]]);
+const step17 = () => scene(TEXT10);   // kết thúc
+
+vase.addEventListener('click', () => { if(text.textContent === 'Touch the vase') breakVase(); });
+text.addEventListener('click', () => { if(text.textContent === 'Touch the vase') breakVase(); });
+</script>
+</body>
+</html>
