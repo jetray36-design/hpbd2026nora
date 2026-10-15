@@ -18,7 +18,7 @@ main{position:relative;z-index:3;height:100%;display:flex;overflow-x:hidden;over
 .wrap{display:flex;flex-direction:column;align-items:center;gap:26px;width:100%;margin:auto}
 
 /* Paper card */
-.card{width:min(440px,100%);min-height:250px;padding:26px 24px 24px;
+.card{position:relative;width:min(440px,100%);min-height:250px;padding:26px 24px 24px;
  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;
  background:#e9dfc4 url('paper.png') center/cover no-repeat;
  border-radius:4px;color:#2b2118;
@@ -75,9 +75,45 @@ main{position:relative;z-index:3;height:100%;display:flex;overflow-x:hidden;over
 #volrange::-moz-range-thumb{width:14px;height:14px;border-radius:50%;background:#fff;border:0}
 #volrange::-moz-range-track{background:transparent}
 
+/* Gợi ý "Click vào cái bình hoa đi": vòng doodle quanh vase + đường nối + chữ, tất cả nằm trong container */
+:root{--line:60px}
+#text:empty{display:none}
+#vasebox{position:relative;display:inline-block;flex:none}
+#vasebox #vase{display:block}
+.row.hinting{flex-wrap:nowrap;width:100%;gap:12px}
+.hint{position:absolute;transition:opacity .3s}
+.hint path,.hintline path{fill:none;stroke:#2b2118;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;vector-effect:non-scaling-stroke}
+.hintcircle{left:-14%;top:-14%;width:128%;height:128%;pointer-events:none;overflow:visible;animation:wipe .8s .2s ease-out both}
+#hintside{display:flex;align-items:flex-start;gap:4px;align-self:flex-start;margin-top:2px;flex:0 1 auto;min-width:0;max-width:240px;transition:opacity .3s}
+.hintline{flex:none;width:var(--line);height:40px;overflow:visible;pointer-events:none;animation:wipe .5s .9s ease-out both}
+#hintlbl{min-width:0;margin-top:-2px;cursor:pointer;white-space:normal;
+ font:400 26px/1.1 'Patrick Hand','Mali',cursive;color:#2b2118;opacity:0;animation:hintin .5s 1.5s forwards;
+ transform-origin:left top;transition:transform .25s cubic-bezier(.3,1.6,.5,1)}
+#hintlbl:hover{transform:scale(1.1)}
+@keyframes hintin{to{opacity:1}}
+@keyframes wipe{from{clip-path:inset(-10% 100% -10% -10%)}to{clip-path:inset(-10% -10% -10% -10%)}}
+#vasebox.touched .hint{opacity:0 !important;pointer-events:none;animation:none}
+#vasebox.touched #vase{cursor:default}
+#vasebox.touched #vase:hover{transform:none}
+
+/* GIF trang trí ở góc phải trên của container (một phần nằm trong, một phần nằm ngoài) */
+.deco{position:absolute;height:auto;z-index:2;pointer-events:none;opacity:0;transition:opacity .4s;filter:drop-shadow(0 8px 14px rgba(0,0,0,.55))}
+.deco.on{opacity:1}
+.deco.tilt{transform:rotate(10deg)}
+.deco.pear{width:184px;top:-74px;right:-74px}
+.deco.nora{width:276px;top:-60px;right:-236px}
+.deco.a4{width:min(375px,100%);top:100%;right:auto;left:50%;margin-top:-3px;transform:translateX(-50%) rotate(.6deg)}
+
 /* ===== Responsive ===== */
+/* Màn hình hẹp: không còn chỗ bên phải, nên gif nằm phía trên container, chỉ đè lên mép trên một chút */
+@media (max-width:900px){
+ .deco.nora{top:auto;bottom:calc(100% - 24px);right:-6px}
+}
 @media (max-width:600px){
- :root{--c:72px;--gap:18px;--fs:21px;--hs:1.2}
+ :root{--c:72px;--gap:18px;--fs:21px;--hs:1.2;--line:46px;--hintw:205px}
+ #hintlbl{font-size:21px}
+ .deco.pear{width:128px;top:-50px;right:-6px}
+ .deco.nora{width:192px}
  main{padding:12px}
  .wrap{gap:18px}
  .card{min-height:210px;padding:20px 16px 18px;gap:12px}
@@ -112,9 +148,17 @@ main{position:relative;z-index:3;height:100%;display:flex;overflow-x:hidden;over
 <main>
   <div class="wrap">
     <div class="card">
-      <div class="row">
-        <div id="text">Touch the vase</div>
-        <img id="vase" src="vase.png" alt="vase">
+      <img id="deco" class="deco" alt="">
+      <div class="row hinting" id="row">
+        <div id="text"></div>
+        <div id="vasebox">
+          <img id="vase" src="vase.png" alt="vase">
+          <svg class="hint hintcircle" viewBox="0 0 100 100" preserveAspectRatio="none"><path d="M52 6 C78 4 96 24 94 52 C92 80 72 96 46 94 C20 92 5 74 7 46 C9 20 28 8 52 6 Z"/></svg>
+        </div>
+        <div id="hintside">
+          <svg class="hintline" viewBox="0 0 70 40" preserveAspectRatio="none"><path d="M0 34 Q36 28 70 10"/></svg>
+          <span id="hintlbl">Click vào cái bình hoa đi.</span>
+        </div>
       </div>
     </div>
     <div id="choices"></div>
@@ -267,11 +311,11 @@ applyVolume();
 async function breakVase(){
   if(busy) return; busy = true;
   await swapVase('brokenvase.png');
-  await setText("Oh no, you broke it. Don't worry, we could always turn back time once again.");
+  await setText("Ôi không, em làm vỡ nó rồi. Nhưng mà đừng lo, em có thể quay lại thời gian mà.");
   busy = false; showChoice('Okay', step2);
 }
 async function step2(){
-  await setText('Focus your energy and chant "Remember your old self, show me your form once more"');
+  await setText('Nhắm mắt tập trung và niệm: "Hãy nhớ về hình dáng ngày xưa của ngươi, cho ta thấy nó một lần nữa"');
   busy = false; showRewind();
 }
 async function rewind(){
@@ -291,7 +335,8 @@ async function rewind(){
   document.body.classList.remove('rewinding');
   choices.innerHTML = '';
   await swapVase('vase2.png');
-  await setText('Wow, thank you for saving the vase');
+  setDeco('pear');
+  await setText('Wow, cảm ơn em đã sửa cái bình nha.');
   busy = false; showChoice('No problem', step4);
 }
 async function loadTxt(file, fallback){
@@ -302,8 +347,8 @@ async function loadTxt(file, fallback){
   return fallback;
 }
 async function step4(){
-  await setText("Now it's your reward. Tear the QR paper, then open the package.");
-  busy = false; showChoice('I have done it', step5);
+  await setText("Đây là phần thưởng của em, em hãy mở hộp quà đi.");
+  busy = false; showChoice('Em mở rồi', step5);
 }
 async function step5(){
   await setText(await loadTxt('text1.txt', TEXT1));
@@ -314,12 +359,12 @@ async function step6(){
   busy = false;
   showChoices([
     ['Okay', step10],
-    ['Why is the vase still here?', step9A],
+    ['Tại sao cái bình vẫn ở đây', step9A],
     ['Ghê vậy sao', step10]
   ]);
 }
 async function step9A(){
-  await setText('Just open the damn package bro');
+  await setText('Kệ nó mà đọc tiếp đi.');
   busy = false;
   showChoices([
     ['Okay', step10],
@@ -327,7 +372,7 @@ async function step9A(){
   ]);
 }
 async function step9B(){
-  await setText('Fack you, this vase is here on my behalf, do you want your birthday present or not?');
+  await setText('Cái bình này đại diện cho anh mà sao em đuổi? Đọc tiếp đi.');
   busy = false;
   showChoices([['Fine', step10]]);
 }
@@ -340,22 +385,40 @@ const TEXT8 = "Hồi đầu năm anh đi đám cưới bạn anh và anh thấy 
 const TEXT10 = "Anh hy vọng là em thích món quà này. Cho dù sau này dù chúng ta có hướng đi riêng hoặc chung thì anh vẫn rất là thương em. Chúc em luôn hạnh phúc, khoẻ mạnh và có nhiều thành công trong cuộc sống\n\nAlways love you.";
 const TEXT9 = "Bây giờ em có thể nói mình là Max Caulfield rồi đấy! Hãy chụp mọi khoảnh khắc vui vẻ, hạnh phúc mà em có nha.";
 
+const deco = document.getElementById('deco');
+const DECOS = { pear:['pear.gif','pear'], nora:['nora.gif','tilt nora'], a4:['a4.gif','a4'] };
+function setDeco(key){
+  const [src, cls] = DECOS[key];
+  deco.className = 'deco ' + cls;
+  if(!deco.src.endsWith(src)) deco.src = src;
+  requestAnimationFrame(() => deco.classList.add('on'));
+}
+
 async function scene(t, opts){
   await setText(t);
   busy = false;
   if(opts) showChoices(opts);
 }
 const step10 = () => scene(TEXT3, [['Không nói sao biết hả cha', step11], ['Không biết', step11]]);
-const step11 = () => scene(TEXT4, [['Ok tui vẫn không biết', step12], ['Hình như tui biết là gì rồi', step12]]);
+const step11 = () => { setDeco('nora'); return scene(TEXT4, [['Ok tui vẫn không biết', step12], ['Hình như tui biết là gì rồi', step12]]); };
 const step12 = () => scene(TEXT5, [['Tui mở rồi', step13]]);
 const step13 = () => scene(TEXT6, [['Ok bro', step14]]);
 const step14 = () => scene(TEXT7, [['Nói tiếp đi', step15]]);
 const step15 = () => scene(TEXT8, [['Nói tiếp đi', step16]]);
 const step16 = () => scene(TEXT9, [['Okay', step17]]);
-const step17 = () => scene(TEXT10);   // kết thúc
+const step17 = () => { setDeco('a4'); return scene(TEXT10); };   // kết thúc
 
-vase.addEventListener('click', () => { if(text.textContent === 'Touch the vase') breakVase(); });
-text.addEventListener('click', () => { if(text.textContent === 'Touch the vase') breakVase(); });
+const vasebox = document.getElementById('vasebox');
+let touched = false;
+function touchVase(){
+  if(touched) return; touched = true;
+  vasebox.classList.add('touched');
+  const hs = document.getElementById('hintside'); hs.style.opacity = 0;
+  setTimeout(() => { hs.style.display = 'none'; document.getElementById('row').classList.remove('hinting'); }, 300);
+  breakVase();
+}
+vase.addEventListener('click', touchVase);
+document.getElementById('hintlbl').addEventListener('click', touchVase);
 </script>
 </body>
 </html>
